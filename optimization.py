@@ -220,8 +220,10 @@ class TravellingSalesmanProblem(Annealer):
     def distance(self, a, b):
         """Calculates distance between two latitude-longitude coordinates."""
         # -----------------------------
-        # Your code
-        return 0.0
+        lati1, longi1 = self.cities[a]
+        lati2, longi2 = self.cities[b]
+        # used the math formula to find the distance
+        return math.sqrt((lati1-lati2)**2 + (longi1 - longi2)**2)
         # -----------------------------
 
 
@@ -236,9 +238,20 @@ class TravellingSalesmanProblem(Annealer):
     def move(self):
 
         # --------------------
-        # Your code
+        x = len(self.state)
 
-        pass
+        # to get a random index that is 1 less than x
+        y = random.randint(0, x-1)
+        # to get another random index that is 1 less than x
+        z = random.randint(0, x-1)
+        # the random indexes should not be the same
+        while z == y:
+            z = random.randint(0,x-1)
+        
+        # this is to swap each one of them by using a temporary storage for one and then to swap the other
+        temp = self.state[y]
+        self.state[y] = self.state[z]
+        self.state[z] = temp
         # -------------------------
 
 
@@ -249,6 +262,16 @@ class TravellingSalesmanProblem(Annealer):
     def energy(self):
         # Initialize the value to be returned
         e = 0
+        # number of cities in the current state
+        n = len(self.state)
+        # goes thoruhg each city
+        for i in range(n):
+            # gets the current city
+            cit1 = self.state[i]
+            # gets the next city and the i+1 % n is so that when it reaches the last, it wraps around to get 0
+            cit2 = self.state[(i + 1) % n]  
+            # adds the distance to get the otal energy
+            e = e + self.distance(cit1, cit2)
         
         #-----------------------
         # Your code
@@ -256,7 +279,7 @@ class TravellingSalesmanProblem(Annealer):
 
 
         #-----------------------
-
+        # returns it
         return e
 
 # Execution part, please don't change it!!!
