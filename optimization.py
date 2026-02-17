@@ -164,6 +164,7 @@ def sudokuIPToGrid(binary,psize):
 """ for the ith square having value j where in a 4x4 grid i ranges from 0 to 15 """
 def sudokuIP(positions,psize):
     # Define the variables - see comment above about interpretation
+    # given code
     dim = psize**2
     M = cp.Variable((dim**2,dim),integer=True) #Sadly we cannot do 3D Variables
 
@@ -172,14 +173,35 @@ def sudokuIP(positions,psize):
     # Your code
     # It should define the constraints needed
     # We've given you one to get you started
+    # given code
     constraints.extend([0 <= M[x][k] for x in range(dim**2) for k in range (dim)])
 
-
-
+    # defining another constraint
+    constraints.extend([M[x][k] <= 1 for x in range(dim**2) for k in range(dim)])
+    # each square must contain exactly one number
+    constraints.extend([cp.sum(M[i, :]) == 1 for i in range(dim**2)])
+    # this is for the row constraints and for each row and each value of k, the value must appear exactly once in row r
+    for ro in range(dim):
+        for x in range(dim):
+            constraints.append(cp.sum([M[ro*dim + co, x] for co in range(dim)]) == 1)
+    # this is for the column constraints and for each column c and each value k and that value would appar exactly once in column c.
+    for co in range(dim):
+        for x in range(dim):
+            constraints.append(cp.sum([M[ro*dim + co, x] for ro in range(dim)]) == 1)
+    # subgrid constraints for each subgrid and each value k
+    for bro in range(psize):
+        for bco in range(psize):
+            for x in range(dim):
+                constraints.append(cp.sum([M[(bro*psize + dro)*dim + (bco*psize + dco), x]for dro in range(psize) for dco in range(psize)]) == 1)
+    # thsi is for cell constraints
+    for (r, c, val) in positions:
+        index = r * dim + c
+        constraints.append(M[index, val-1] == 1)
     # End your code
     # -------------------
 
     # Form dummy objective - we only care about feasibility
+    # given code
     obj = cp.Minimize(M[0][0])
 
     # Form and solve problem.
