@@ -107,18 +107,34 @@ def fractionalKnapsack(c):
     # -------------------
     # Your code
     # First define some variables
-    
+    v = cp.Variable(3)    # defining 3 different varibales using python function. 
+
+    weights = [5, 3, 1]  # given in problem     
+    values = [2, 3, 1]   # given in problem 
 
     # Put your constraints here
-    constraints = []
+    constraints = [   # it has to be between 0 and 1 and is capacity should be less than c 
+        v >= 0 ,      
+        v <= 1 ,
+        # the following constraint will ensure that our total weight is less than our capacity
+        # so what I did is i took weight values one by one and multiplied by fraction of item 1 taken 
+        # so weight[0] = 5 and v[0] fraction of that item 1 is taken. 
+        # so an example to understand is v[0] = 0.2 i took 20% of item 1 weight is 5 = so 5 * 0. 2 = 1  
+        # so weight used of item 1 is  = 1  
+        weights[0]*v[0] + weights[1]*v[1] + weights[2]*v[2] <= c 
+    ]
 
     # Fix this to be the correct objective function
-    obj = cp.Maximize(0)
+    # and similarly we do the same thing for our value here
+    # becasue we want to maximize our objective. again v[.] is  fraction of that item taken * is value. 
+    # so let's continue the example from earlier. v[0] = 0.2 then value is 2 for item 1 so 2 * 0.2 = 0.4 total value of item 1
+    obj = cp.Maximize(values[0]*v[0] + values[1]*v[1] + values[2]*v[2])
 
     # End of your code
     # ------------------
     prob = cp.Problem(obj, constraints)
     return prob.solve()
+
 
 ############################## PROBLEM 3 ######################################
 # Integer Programming: Sudoku
@@ -312,12 +328,22 @@ class SudokuProblem(Annealer):
     """ Make sure there is a way for enough of your local changes to
               reach a solution """
     def move(self):
-
         # --------------------
-        # Your code
+        size = self.psize * self.psize  # here we calculate the total size of the grib by using self.psize 
 
+        i = random.randint(0, size - 1) # to pick a random state we use random pyton function to pick between 0 and size -1(index) 
+        j = random.randint(0, size - 1) # we pick i and j number row and random column to check if is filled or not filled 
 
-        pass
+        while any(position[0] == i and position[1] == j for position in self.positions): # this is important becasue this will check if the random i,j we chose has a filled square meaning 
+            # does it have a value already in it. if is fixed then 
+            i = random.randint(0, size - 1) # choose another i 
+            j = random.randint(0, size - 1) # choose anoter j  will go until position in the grid is not fixed. 
+
+        index  = i * size + j  # because we looked at in 2d we convert back to the 1d array grid. with taking row multiply by the size and adding the colum 
+        self.state[index] = random.randint(1, size) # just making one local change by assigning one random value to not fixed in grid. 
+ 
+        for row, column, value in self.positions: # very important becasue we need to restore the fixed position to thier corresponding values else, gives me duplicate and also out of order. 
+            self.state[row * size + column] = value # so again convert to 1d array and set the correct value in those self.position grid.
         # -------------------------
 
 
@@ -327,16 +353,46 @@ class SudokuProblem(Annealer):
     """ Remember what we talked about in class for the energy function for a CSP """
     def energy(self):
         # Initialize the value to be returned
-        e = 0
+        e = 0 
+        #-----------------------
+        size = self.psize * self.psize    # here we calculate the total size of the grib by using self.psize
+
+        # to check duplicate for rows 
+        for rows in range(size):  # starting with we loop through all the rows(size cause every grid is different)
+            start = rows * size # calcualting row starting point to begin checking duplicate 
+            end = start + size # and where duplicate check will end is going to be done by starting index and is size.
+            row = self.state[start:end]  # we can get the whole row by using slice method. so using : we get the entire row
+            duplicates = len(row) - len(set(row)) # the way i did this is by checking element vs set of elemet as we know set will not have any duplicate so we can check by getting the length of 
+            # entire row and then getting the set of the row and then counting if = 0 then no duplicate if = any number > 0 than duplicate are present. 
+            e += duplicates # add that duplicate number over here to the energy. 
+
+        for c in range(size):  # Loop through each column in the grid 
+            col = []  # i made an empty to get all values that are in the column 
+            # the reason to me using list is cause in 1d array the index for colum are seprated out and not next to each other like rows... 
+            
         
-        #-----------------------
-        # Your code
+            for r in range(size):  # we go to each row to get all elements for all columns 
+                index = r * size + c  # like in move defination, we convert back to 1d index 
+                col.append(self.state[index]) # we than increase the value of the position to our column list. 
+            
+            # Now count duplicates
+            duplicates = len(col) - len(set(col)) # again like in rows duplicate. i did by checking element vs set of elemet as we know set will not have any duplicate so we can check by getting the length of 
+            # entire row and then getting the set of the row and then counting if = 0 then no duplicate if = any number > 0 than duplicate are present. 
+            e += duplicates # and then add duplicate to energy. 
 
-
-
-
-        #-----------------------
-
+        # we also have to check that each block must have all unique value ;( 
+        for block_row in range(self.psize):  # loop through each block row self.prize is not full grid just block. 
+            for block_col in range(self.psize):  #  and then go through column. 
+                block = [] # made an empty list to collect all values in the block. 
+                
+                for r in range(block_row * self.psize, (block_row + 1) * self.psize): # i calculate what rows belong to the specific subgrid. so we don't mix values. 
+                    for c in range(block_col * self.psize, (block_col + 1) * self.psize):  # and for columns the same thing, which specifc columns belong to this subgrid 
+                        index = r * size + c # again like earlier convert back to 1d array. 
+                        block.append(self.state[index]) # increase the value to our list. 
+                
+                duplicates = len(block) - len(set(block)) # again check if duplicate exist
+                e += duplicates # then increase that to energy if does. 
+        #----------------------- 
         return e
 
 # Execution part, please don't change it!!!
@@ -348,3 +404,4 @@ def annealSudoku(positions, psize):
         sudoku.Tmax = 100.0
         sudoku.Tmin = 1.0
         return sudoku.anneal()
+
